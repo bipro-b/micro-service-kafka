@@ -1,0 +1,54 @@
+version: '3.8' # Using a modern Docker Compose file version
+services:
+  zookeeper:
+    # --- FIX APPLIED HERE: Using bitnamilegacy repo ---
+    image: bitnamilegacy/zookeeper:3.9.2
+    container_name: zookeeper
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    ports:
+      - "2181:2181"
+
+  kafka:
+    # --- FIX APPLIED HERE: Using bitnamilegacy repo ---
+    image: bitnamilegacy/kafka:3.6.1
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    ports:
+      - "9092:9092"
+
+  product-service:
+    build: ./product-service
+    ports:
+      - "4001:4001"
+
+  user-service:
+    build: ./user-service
+    ports:
+      - "4002:4002"
+    depends_on:
+      - kafka
+
+  order-service:
+    build: ./order-service
+    ports:
+      - "4003:4003"
+    depends_on:
+      - kafka
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "4000:4000"
+    depends_on:
+      - product-service
+      - user-service
+      - order-service
