@@ -1,0 +1,145 @@
+@Library('Shared') _
+pipeline {
+    agent { label 'Node' }
+
+    environment {
+        SONAR_HOME = tool "Sonar"
+        DOCKERHUB_USER = "biprob"
+    }
+
+    parameters {
+        string(
+            name: 'DOCKER_TAG',
+            defaultValue: 'latest',
+            description: 'Docker image tag'
+        )
+    }
+
+    stages {
+
+        stage("Validate Parameters") {
+            steps {
+                script {
+                    if (!params.DOCKER_TAG?.trim()) {
+                        error("DOCKER_TAG must be provided")
+                    }
+                }
+            }
+        }
+
+        stage("Workspace Cleanup") {
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage('Git: Checkout Code') {
+            steps {
+                script {
+                    code_checkout(
+                        "https://github.com/bipro-b/micro-service-kafka.git",
+                        "main"
+                    )
+                }
+            }
+        }
+
+        stage("Security: Trivy Filesystem Scan") {
+            steps {
+                script {
+                    trivy_scan()
+                }
+            }
+        }
+
+        stage("Security: OWASP Dependency Check") {
+            steps {
+                script {
+                    owasp_dependency()
+                }
+            }
+        }
+
+        stage("SonarQube: Code Analysis") {
+            steps {
+                script {
+                    sonarqube_analysis(
+                        "Sonar",
+                        "micro-service-kafka",
+                        "micro-service-kafka"
+                    )
+                }
+            }
+        }
+
+        stage("SonarQube: Quality Gate") {
+            steps {
+                script {
+                    sonarqube_code_quality()
+                }
+            }
+        }
+
+        stage("Docker: Build Images") {
+            steps {
+                script {
+
+                    dir('user-service') {
+                        docker_build(
+                            "microservices-project-user-service",
+                            params.DOCKER_TAG,
+                            env.DOCKERHUB_USER
+                        )
+                    }
+
+                    dir('product-service') {
+                        docker_build(
+                            "microservices-project-product-service",
+                            params.DOCKER_TAG,
+                            env.DOCKERHUB_USER
+                        )
+                    }
+
+                    dir('order-service') {
+                        docker_build(
+                            "microservices-project-order-service",
+                            params.DOCKER_TAG,
+                            env.DOCKERHUB_USER
+                        )
+                    }
+
+                    dir('api-gateway') {
+                        docker_build(
+                            "microservices-project-api-gateway",
+                            params.DOCKER_TAG,
+                            env.DOCKERHUB_USER
+                        )
+                    }
+                }
+            }
+        }
+
+        stage("Docker: Push Images to Docker Hub") {
+            steps {
+                script {
+                    docker_push("microservices-project-user-service", params.DOCKER_TAG, env.DOCKERHUB_USER)
+                    docker_push("microservices-project-product-service", params.DOCKER_TAG, env.DOCKERHUB_USER)
+                    docker_push("microservices-project-order-service", params.DOCKER_TAG, env.DOCKERHUB_USER)
+                    docker_push("microservices-project-api-gateway", params.DOCKER_TAG, env.DOCKERHUB_USER)
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            archiveArtifacts artifacts: '*.xml', followSymlinks: false
+
+            build job: "micro-service-kafka-CD",
+                parameters: [
+                    string(name: 'DOCKER_TAG', value: params.DOCKER_TAG)
+                ],
+                propagate: false
+        }
+    }
+}
