@@ -1,6 +1,6 @@
 @Library('Shared') _
 pipeline {
-    agent { label 'Node' }
+    agent any
 
     parameters {
         string(
@@ -53,10 +53,10 @@ pipeline {
                     dir('kubernetes') {
 
                         sh """
-                        sed -i -e s|microservices-project-user-service:.*|microservices-project-user-service:${params.DOCKER_TAG}|g user-service.yaml
-                        sed -i -e s|microservices-project-product-service:.*|microservices-project-product-service:${params.DOCKER_TAG}|g product-service.yaml
-                        sed -i -e s|microservices-project-order-service:.*|microservices-project-order-service:${params.DOCKER_TAG}|g order-service.yaml
-                        sed -i -e s|microservices-project-api-gateway:.*|microservices-project-api-gateway:${params.DOCKER_TAG}|g api-gateway.yaml
+                        sed -i -e "s|microservices-project-user-service:.*|microservices-project-user-service:${params.DOCKER_TAG}|g" user-service.yaml
+                        sed -i -e "s|microservices-project-product-service:.*|microservices-project-product-service:${params.DOCKER_TAG}|g" product-service.yaml
+                        sed -i -e "s|microservices-project-order-service:.*|microservices-project-order-service:${params.DOCKER_TAG}|g" order-service.yaml
+                        sed -i -e "s|microservices-project-api-gateway:.*|microservices-project-api-gateway:${params.DOCKER_TAG}|g" api-gateway.yaml
                         """
                     }
                 }
