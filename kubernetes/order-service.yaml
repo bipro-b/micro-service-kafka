@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: order-service
-          image: biprob/microservices-project-order-service:v5
+          image: biprob/microservices-project-order-service:latest
           ports:
             - containerPort: 4003
 ---
