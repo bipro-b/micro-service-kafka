@@ -1,0 +1,133 @@
+@Library('Shared') _
+pipeline {
+    agent { label 'Node' }
+
+    parameters {
+        string(
+            name: 'DOCKER_TAG',
+            defaultValue: '',
+            description: 'Docker tag pushed by CI pipeline'
+        )
+    }
+
+    stages {
+
+        stage("Validate Parameters") {
+            steps {
+                script {
+                    if (!params.DOCKER_TAG?.trim()) {
+                        error("DOCKER_TAG parameter must be provided")
+                    }
+                }
+            }
+        }
+
+        stage("Workspace Cleanup") {
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage('Git: Code Checkout') {
+            steps {
+                script {
+                    code_checkout(
+                        "https://github.com/bipro-b/micro-service-kafka.git",
+                        "main"
+                    )
+                }
+            }
+        }
+
+        stage('Verify: Docker Image Tag') {
+            steps {
+                script {
+                    echo "DOCKER_TAG: ${params.DOCKER_TAG}"
+                }
+            }
+        }
+
+        stage("Update: Kubernetes Manifests") {
+            steps {
+                script {
+                    dir('kubernetes') {
+
+                        sh """
+                        sed -i -e s|microservices-project-user-service:.*|microservices-project-user-service:${params.DOCKER_TAG}|g user-service.yaml
+                        sed -i -e s|microservices-project-product-service:.*|microservices-project-product-service:${params.DOCKER_TAG}|g product-service.yaml
+                        sed -i -e s|microservices-project-order-service:.*|microservices-project-order-service:${params.DOCKER_TAG}|g order-service.yaml
+                        sed -i -e s|microservices-project-api-gateway:.*|microservices-project-api-gateway:${params.DOCKER_TAG}|g api-gateway.yaml
+                        """
+                    }
+                }
+            }
+        }
+
+        stage("Git: Commit & Push Kubernetes Changes") {
+            steps {
+                script {
+                    withCredentials([
+                        gitUsernamePassword(
+                            credentialsId: 'Github-cred',
+                            gitToolName: 'Default'
+                        )
+                    ]) {
+                        sh """
+                        git status
+                        git add kubernetes
+                        git commit -m "CD: Update Kubernetes manifests to ${params.DOCKER_TAG}"
+                        git push https://github.com/bipro-b/micro-service-kafka.git main
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            script {
+                emailext(
+                    attachLog: true,
+                    from: 'biproaws@gmail.com',
+                    to: 'biproaws@gmail.com',
+                    subject: "Micro-service-kafka CD SUCCESS - ${currentBuild.currentResult}",
+                    mimeType: 'text/html',
+                    body: """
+                    <html>
+                    <body>
+                        <h2 style="color:green;">Deployment Successful</h2>
+                        <p><b>Project:</b> ${env.JOB_NAME}</p>
+                        <p><b>Build Number:</b> ${env.BUILD_NUMBER}</p>
+                        <p><b>Docker Tag:</b> ${params.DOCKER_TAG}</p>
+                        <p><b>Build URL:</b> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                    </body>
+                    </html>
+                    """
+                )
+            }
+        }
+
+        failure {
+            script {
+                emailext(
+                    attachLog: true,
+                    from: 'biproaws@gmail.com',
+                    to: 'biproaws@gmail.com',
+                    subject: "Micro-service-kafka CD FAILED - ${currentBuild.currentResult}",
+                    mimeType: 'text/html',
+                    body: """
+                    <html>
+                    <body>
+                        <h2 style="color:red;">Deployment Failed</h2>
+                        <p><b>Project:</b> ${env.JOB_NAME}</p>
+                        <p><b>Build Number:</b> ${env.BUILD_NUMBER}</p>
+                        <p><b>Build URL:</b> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                    </body>
+                    </html>
+                    """
+                )
+            }
+        }
+    }
+}
