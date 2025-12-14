@@ -4,7 +4,7 @@
 
 ![CI](./images/jenkinsci.png)
 ![CD](./images/jenkinscd.png)
-![CD](./images/success-email.png)
+![CD](./images/succes-email.png)
 ![Blue Ocean](./images/blue-ocean.png)
 ![ArgoCD](./images/argocd.png)
 ![Grafana](./images/grafana.png)
