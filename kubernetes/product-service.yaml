@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: product-service
-          image: biprob/microservices-project-product-service:latest-b2
+          image: biprob/microservices-project-product-service:latest-b4
           ports:
             - containerPort: 4001
 ---
