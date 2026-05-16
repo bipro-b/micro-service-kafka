@@ -29,7 +29,7 @@ pipeline {
 
         stage("Workspace Cleanup") {
             steps {
-                cleanWs()
+                deleteDir()
             }
         }
 
@@ -135,7 +135,7 @@ pipeline {
         success {
             archiveArtifacts artifacts: '*.xml', followSymlinks: false
 
-            build job: "micro-service-kafka-CD",
+            build job: "cd",
                 parameters: [
                     string(name: 'DOCKER_TAG', value: params.DOCKER_TAG)
                 ],
