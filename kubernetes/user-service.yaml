@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: user-service
-          image: biprob/microservices-project-user-service:latest-b4
+          image: biprob/microservices-project-user-service:latest-finalbb
           ports:
             - containerPort: 4002
 ---

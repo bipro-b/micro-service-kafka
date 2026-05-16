@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: biprob/microservices-project-api-gateway:latest-b4
+          image: biprob/microservices-project-api-gateway:latest-finalbb
           ports:
             - containerPort: 4000
 ---
