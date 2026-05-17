@@ -157,7 +157,7 @@ data:
           },
           "targets": [
             {
-              "expr": "100 * sum(rate(http_requests_total{status_code=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))",
+              "expr": "(sum(rate(http_requests_total{status_code=~\"5..\"}[5m])) or vector(0)) / sum(rate(http_requests_total[5m])) * 100",
               "legendFormat": "Error Rate",
               "refId": "A"
             }
@@ -393,7 +393,7 @@ data:
           },
           "targets": [
             {
-              "expr": "sum(rate(upstream_requests_total{status=\"error\"}[1m])) by (upstream)",
+              "expr": "sum(rate(upstream_requests_total{status=\"error\"}[1m])) by (upstream) or sum(rate(upstream_requests_total[1m])) by (upstream) * 0",
               "legendFormat": "{{upstream}} errors",
               "refId": "A"
             }
