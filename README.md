@@ -9,6 +9,13 @@
 ![Grafana](./images/promethues.png)
 ![CD](./images/cred.png)
 
+## Custom Grafana Dashboard
+
+![Dashboard 1](./images/dashboard-1.png)
+![Dashboard 2](./images/dashboard-2.png)
+![Dashboard 3](./images/dashboard-3.png)
+![Dashboard 4](./images/dashboard-4.png)
+
 ---
 
 ## Tech Stack
