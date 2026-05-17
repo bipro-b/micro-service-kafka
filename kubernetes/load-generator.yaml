@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: load-generator
-          image: biprob/microservices-project-load-generator:latest-b4
+          image: biprob/microservices-project-load-generator:latest-finalbb
           env:
             - name: GATEWAY_URL
               value: "http://api-gateway:4000"

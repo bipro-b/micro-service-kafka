@@ -1,5 +1,5 @@
 # ServiceMonitors tell Prometheus to scrape /metrics from each service.
-# label "release: stable" must match the kube-prometheus-stack Helm release name.
+# label "release: prometheus" matches the kube-prometheus-stack Helm release name.
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
@@ -7,7 +7,7 @@ metadata:
   name: api-gateway-monitor
   namespace: mega
   labels:
-    release: stable
+    release: prometheus
     app: api-gateway
 spec:
   namespaceSelector:
@@ -28,7 +28,7 @@ metadata:
   name: product-service-monitor
   namespace: mega
   labels:
-    release: stable
+    release: prometheus
     app: product-service
 spec:
   namespaceSelector:
@@ -49,7 +49,7 @@ metadata:
   name: user-service-monitor
   namespace: mega
   labels:
-    release: stable
+    release: prometheus
     app: user-service
 spec:
   namespaceSelector:
@@ -70,7 +70,7 @@ metadata:
   name: order-service-monitor
   namespace: mega
   labels:
-    release: stable
+    release: prometheus
     app: order-service
 spec:
   namespaceSelector:
