@@ -1,0 +1,86 @@
+# ServiceMonitors tell Prometheus to scrape /metrics from each service.
+# label "release: stable" must match the kube-prometheus-stack Helm release name.
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: api-gateway-monitor
+  namespace: mega
+  labels:
+    release: stable
+    app: api-gateway
+spec:
+  namespaceSelector:
+    matchNames:
+      - mega
+  selector:
+    matchLabels:
+      app: api-gateway
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: product-service-monitor
+  namespace: mega
+  labels:
+    release: stable
+    app: product-service
+spec:
+  namespaceSelector:
+    matchNames:
+      - mega
+  selector:
+    matchLabels:
+      app: product-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: user-service-monitor
+  namespace: mega
+  labels:
+    release: stable
+    app: user-service
+spec:
+  namespaceSelector:
+    matchNames:
+      - mega
+  selector:
+    matchLabels:
+      app: user-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: order-service-monitor
+  namespace: mega
+  labels:
+    release: stable
+    app: order-service
+spec:
+  namespaceSelector:
+    matchNames:
+      - mega
+  selector:
+    matchLabels:
+      app: order-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s

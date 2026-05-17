@@ -115,6 +115,14 @@ pipeline {
                             env.DOCKERHUB_USER
                         )
                     }
+
+                    dir('load-generator') {
+                        docker_build(
+                            "microservices-project-load-generator",
+                            params.DOCKER_TAG,
+                            env.DOCKERHUB_USER
+                        )
+                    }
                 }
             }
         }
@@ -126,6 +134,7 @@ pipeline {
                     docker_push("microservices-project-product-service", params.DOCKER_TAG, env.DOCKERHUB_USER)
                     docker_push("microservices-project-order-service", params.DOCKER_TAG, env.DOCKERHUB_USER)
                     docker_push("microservices-project-api-gateway", params.DOCKER_TAG, env.DOCKERHUB_USER)
+                    docker_push("microservices-project-load-generator", params.DOCKER_TAG, env.DOCKERHUB_USER)
                 }
             }
         }

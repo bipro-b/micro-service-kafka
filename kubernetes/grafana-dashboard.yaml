@@ -1,0 +1,624 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: microservices-platform-dashboard
+  namespace: prometheus
+  labels:
+    grafana_dashboard: "1"
+data:
+  microservices-platform.json: |
+    {
+      "title": "Microservices Platform",
+      "uid": "microservices-platform-v2",
+      "version": 2,
+      "schemaVersion": 38,
+      "tags": ["microservices", "kubernetes", "devops"],
+      "timezone": "browser",
+      "time": { "from": "now-1h", "to": "now" },
+      "refresh": "30s",
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "current": {},
+            "hide": 0,
+            "includeAll": false,
+            "label": "Datasource"
+          },
+          {
+            "name": "namespace",
+            "type": "query",
+            "datasource": { "type": "prometheus", "uid": "${datasource}" },
+            "query": "label_values(kube_pod_info, namespace)",
+            "current": { "value": "mega" },
+            "hide": 0,
+            "label": "Namespace",
+            "refresh": 2
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "type": "row",
+          "title": "Traffic Overview",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "collapsed": false
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "HTTP Request Rate (req/s by service)",
+          "description": "Requests per second hitting each microservice via the gateway",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15, "spanNulls": false }
+            }
+          },
+          "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] } },
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total{service=\"api-gateway\"}[1m]))",
+              "legendFormat": "api-gateway",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(http_requests_total{service=\"product-service\"}[1m]))",
+              "legendFormat": "product-service",
+              "refId": "B"
+            },
+            {
+              "expr": "sum(rate(http_requests_total{service=\"user-service\"}[1m]))",
+              "legendFormat": "user-service",
+              "refId": "C"
+            },
+            {
+              "expr": "sum(rate(http_requests_total{service=\"order-service\"}[1m]))",
+              "legendFormat": "order-service",
+              "refId": "D"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "P95 Response Latency (by service)",
+          "description": "95th percentile response time — keep below 200ms for good UX",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 0.2 },
+                  { "color": "red", "value": 0.5 }
+                ]
+              }
+            }
+          },
+          "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] } },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"api-gateway\"}[5m])) by (le))",
+              "legendFormat": "api-gateway p95",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"product-service\"}[5m])) by (le))",
+              "legendFormat": "product-service p95",
+              "refId": "B"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"user-service\"}[5m])) by (le))",
+              "legendFormat": "user-service p95",
+              "refId": "C"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"order-service\"}[5m])) by (le))",
+              "legendFormat": "order-service p95",
+              "refId": "D"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "HTTP Error Rate %",
+          "description": "% of 5xx responses across all services",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 9 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 1 },
+                  { "color": "red", "value": 5 }
+                ]
+              }
+            }
+          },
+          "targets": [
+            {
+              "expr": "100 * sum(rate(http_requests_total{status_code=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))",
+              "legendFormat": "Error Rate",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "stat",
+          "title": "Active Connections (Gateway)",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 9 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "area"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "blue", "value": null },
+                  { "color": "yellow", "value": 50 },
+                  { "color": "red", "value": 200 }
+                ]
+              }
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(active_http_connections{service=\"api-gateway\"})",
+              "legendFormat": "connections",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "type": "stat",
+          "title": "Total Requests (Last 1h)",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 9 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "value",
+            "graphMode": "none"
+          },
+          "fieldConfig": { "defaults": { "unit": "short" } },
+          "targets": [
+            {
+              "expr": "sum(increase(http_requests_total[1h]))",
+              "legendFormat": "requests",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "type": "stat",
+          "title": "Gateway P50 Latency",
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 9 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 100 },
+                  { "color": "red", "value": 300 }
+                ]
+              },
+              "mappings": []
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{service=\"api-gateway\"}[5m])) by (le)) * 1000",
+              "legendFormat": "p50 ms",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "type": "row",
+          "title": "Business Metrics",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+          "collapsed": false
+        },
+        {
+          "id": 11,
+          "type": "stat",
+          "title": "Orders Created / minute",
+          "description": "Rate of new orders hitting the platform",
+          "gridPos": { "h": 5, "w": 6, "x": 0, "y": 14 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "area"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 50 },
+                  { "color": "red", "value": 200 }
+                ]
+              }
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(orders_created_total[1m])) * 60",
+              "legendFormat": "orders/min",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 12,
+          "type": "timeseries",
+          "title": "Order Value Distribution (P50 / P95)",
+          "description": "Dollar value of individual line items placed",
+          "gridPos": { "h": 8, "w": 10, "x": 6, "y": 14 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "currencyUSD",
+              "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 20 }
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.50, sum(rate(order_value_dollars_bucket[5m])) by (le))",
+              "legendFormat": "p50 order value",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(order_value_dollars_bucket[5m])) by (le))",
+              "legendFormat": "p95 order value",
+              "refId": "B"
+            }
+          ]
+        },
+        {
+          "id": 13,
+          "type": "piechart",
+          "title": "Orders by Status",
+          "description": "Real-time distribution of order statuses in the system",
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 14 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "options": {
+            "pieType": "donut",
+            "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] }
+          },
+          "targets": [
+            {
+              "expr": "orders_by_status{service=\"order-service\"}",
+              "legendFormat": "{{status}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 14,
+          "type": "stat",
+          "title": "Total Orders in System",
+          "gridPos": { "h": 3, "w": 6, "x": 0, "y": 19 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+          "fieldConfig": { "defaults": { "unit": "short" } },
+          "targets": [
+            {
+              "expr": "sum(orders_by_status{service=\"order-service\"})",
+              "legendFormat": "total orders",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 20,
+          "type": "row",
+          "title": "API Gateway — Upstream & Route Analysis",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+          "collapsed": false
+        },
+        {
+          "id": 21,
+          "type": "timeseries",
+          "title": "Gateway Traffic by Route",
+          "description": "Request rate split by route — see which endpoints get the most traffic",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": { "drawStyle": "bars", "fillOpacity": 80 }
+            }
+          },
+          "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } },
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total{service=\"api-gateway\"}[1m])) by (route, method)",
+              "legendFormat": "{{method}} {{route}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 22,
+          "type": "timeseries",
+          "title": "Upstream Service Error Rate",
+          "description": "Failed calls from api-gateway to each upstream — shows dependency health",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": { "drawStyle": "line", "fillOpacity": 25 },
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.1 }] }
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(upstream_requests_total{status=\"error\"}[1m])) by (upstream)",
+              "legendFormat": "{{upstream}} errors",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 23,
+          "type": "table",
+          "title": "Upstream Latency Summary",
+          "description": "P50 / P95 / P99 for each upstream",
+          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 31 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "options": { "sortBy": [{ "displayName": "P95", "desc": true }] },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.50, sum(rate(upstream_latency_seconds_bucket[5m])) by (upstream, le)) * 1000",
+              "legendFormat": "{{upstream}}",
+              "refId": "A",
+              "instant": true
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(upstream_latency_seconds_bucket[5m])) by (upstream, le)) * 1000",
+              "legendFormat": "{{upstream}}",
+              "refId": "B",
+              "instant": true
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(upstream_latency_seconds_bucket[5m])) by (upstream, le)) * 1000",
+              "legendFormat": "{{upstream}}",
+              "refId": "C",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            { "id": "merge", "options": {} },
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": { "Value #A": "P50 (ms)", "Value #B": "P95 (ms)", "Value #C": "P99 (ms)" }
+              }
+            }
+          ]
+        },
+        {
+          "id": 24,
+          "type": "stat",
+          "title": "Kafka Events Received",
+          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 31 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "area"
+          },
+          "fieldConfig": { "defaults": { "unit": "short" } },
+          "targets": [
+            {
+              "expr": "sum(increase(kafka_events_received_total[1h]))",
+              "legendFormat": "Kafka events (1h)",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 30,
+          "type": "row",
+          "title": "Kubernetes Infrastructure",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 37 },
+          "collapsed": false
+        },
+        {
+          "id": 31,
+          "type": "timeseries",
+          "title": "CPU Usage by Pod (namespace: mega)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 38 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 }
+            }
+          },
+          "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] } },
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"mega\",container!=\"\",container!=\"POD\"}[2m])) by (pod)",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 32,
+          "type": "timeseries",
+          "title": "Memory Usage by Pod (namespace: mega)",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 38 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 }
+            }
+          },
+          "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] } },
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"mega\",container!=\"\",container!=\"POD\"}) by (pod)",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 33,
+          "type": "stat",
+          "title": "Running Pods (namespace: mega)",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 46 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 3 }, { "color": "green", "value": 5 }]
+              }
+            }
+          },
+          "targets": [
+            {
+              "expr": "count(kube_pod_status_phase{namespace=\"mega\",phase=\"Running\"})",
+              "legendFormat": "running pods",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 34,
+          "type": "stat",
+          "title": "Pod Restarts (Last 1h)",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 46 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 3 }]
+              }
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"mega\"}[1h]))",
+              "legendFormat": "restarts",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 35,
+          "type": "bargauge",
+          "title": "Replicas per Deployment",
+          "gridPos": { "h": 4, "w": 12, "x": 12, "y": 46 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "options": {
+            "orientation": "horizontal",
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "displayMode": "lcd"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "max": 6,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 1 }, { "color": "green", "value": 2 }]
+              }
+            }
+          },
+          "targets": [
+            {
+              "expr": "kube_deployment_status_replicas_available{namespace=\"mega\"}",
+              "legendFormat": "{{deployment}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 36,
+          "type": "timeseries",
+          "title": "Node.js Heap Usage (all services)",
+          "description": "Working memory of each service process — watch for memory leaks",
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 50 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 8 }
+            }
+          },
+          "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] } },
+          "targets": [
+            {
+              "expr": "nodejs_heap_size_used_bytes{service=\"api-gateway\"}",
+              "legendFormat": "api-gateway heap used",
+              "refId": "A"
+            },
+            {
+              "expr": "nodejs_heap_size_used_bytes{service=\"product-service\"}",
+              "legendFormat": "product-service heap used",
+              "refId": "B"
+            },
+            {
+              "expr": "nodejs_heap_size_used_bytes{service=\"user-service\"}",
+              "legendFormat": "user-service heap used",
+              "refId": "C"
+            },
+            {
+              "expr": "nodejs_heap_size_used_bytes{service=\"order-service\"}",
+              "legendFormat": "order-service heap used",
+              "refId": "D"
+            }
+          ]
+        }
+      ]
+    }

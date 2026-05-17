@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator-deployment
+  namespace: mega
+  labels:
+    app: load-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+        - name: load-generator
+          image: biprob/microservices-project-load-generator:latest-b4
+          env:
+            - name: GATEWAY_URL
+              value: "http://api-gateway:4000"
+            - name: INTERVAL_MS
+              value: "2000"
+            - name: CONCURRENCY
+              value: "3"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"

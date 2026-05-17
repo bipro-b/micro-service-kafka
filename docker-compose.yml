@@ -52,3 +52,12 @@ services:
       - product-service
       - user-service
       - order-service
+
+  load-generator:
+    build: ./load-generator
+    environment:
+      GATEWAY_URL: "http://api-gateway:4000"
+      INTERVAL_MS: "2000"
+      CONCURRENCY: "2"
+    depends_on:
+      - api-gateway
