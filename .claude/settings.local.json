@@ -3,7 +3,9 @@
     "allow": [
       "Bash(Get-ChildItem -Path \"D:\\\\0.dev-bipro\\\\microservices-project\" -Recurse -Force)",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(Sort-Object)"
+      "Bash(Sort-Object)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
