@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: order-service
-          image: biprob/microservices-project-order-service:latest-finalbb
+          image: biprob/microservices-project-order-service:latest-bbone
           ports:
             - name: http
               containerPort: 4003
