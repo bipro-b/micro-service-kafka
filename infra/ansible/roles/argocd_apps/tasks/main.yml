@@ -1,0 +1,26 @@
+---
+- name: Wait for ArgoCD CRDs to be established
+  kubernetes.core.k8s_info:
+    api_version: apiextensions.k8s.io/v1
+    kind: CustomResourceDefinition
+    name: applications.argoproj.io
+    wait: true
+    wait_condition:
+      type: Established
+      status: "True"
+    wait_timeout: 60
+
+- name: Deploy microservices-platform ArgoCD Application
+  kubernetes.core.k8s:
+    state: present
+    template: app.yaml.j2
+
+- name: Trigger initial sync
+  ansible.builtin.command:
+    cmd: >
+      kubectl patch application microservices-platform
+      -n {{ argocd_namespace }}
+      --type merge
+      -p '{"operation":{"initiatedBy":{"username":"ansible"},"sync":{"revision":"HEAD"}}}'
+  changed_when: true
+  ignore_errors: true

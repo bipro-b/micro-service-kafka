@@ -1,0 +1,26 @@
+---
+# AWS / EKS
+aws_region:   "us-west-2"
+cluster_name: "mega"
+
+# Namespaces
+app_namespace:        "mega"
+monitoring_namespace: "prometheus"
+argocd_namespace:     "argocd"
+
+# ArgoCD
+argocd_helm_version:    "7.3.4"
+argocd_repo_url:        "https://github.com/bipro-b/micro-service-kafka"
+argocd_target_revision: "HEAD"
+argocd_app_path:        "kubernetes"
+
+# AWS Load Balancer Controller
+alb_controller_helm_version: "1.8.1"
+# Pass at runtime: ansible-playbook site.yml -e alb_controller_role_arn=arn:aws:iam::ACCOUNT:role/...
+alb_controller_role_arn: ""
+
+# kube-prometheus-stack
+# release name MUST be "stable" — ServiceMonitors use label release: stable
+prometheus_release_name:    "stable"
+prometheus_helm_version:    "61.3.2"
+grafana_admin_password:     "admin"   # override in production via vault or --extra-vars

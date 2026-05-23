@@ -1,0 +1,18 @@
+---
+- name: Configure EKS cluster — mega
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  pre_tasks:
+    - name: Update kubeconfig for cluster {{ cluster_name }}
+      ansible.builtin.command:
+        cmd: "aws eks update-kubeconfig --region {{ aws_region }} --name {{ cluster_name }}"
+      changed_when: false
+
+  roles:
+    - namespaces
+    - argocd
+    - alb_controller
+    - prometheus
+    - argocd_apps

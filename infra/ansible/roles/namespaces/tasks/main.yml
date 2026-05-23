@@ -1,0 +1,21 @@
+---
+- name: Create {{ app_namespace }} namespace
+  kubernetes.core.k8s:
+    name: "{{ app_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Create {{ monitoring_namespace }} namespace
+  kubernetes.core.k8s:
+    name: "{{ monitoring_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Create {{ argocd_namespace }} namespace
+  kubernetes.core.k8s:
+    name: "{{ argocd_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present

@@ -1,0 +1,47 @@
+---
+- name: Add ArgoCD Helm repo
+  kubernetes.core.helm_repository:
+    name: argo
+    repo_url: "https://argoproj.github.io/argo-helm"
+
+- name: Install ArgoCD
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: argo/argo-cd
+    chart_version: "{{ argocd_helm_version }}"
+    release_namespace: "{{ argocd_namespace }}"
+    create_namespace: false
+    wait: true
+    values:
+      server:
+        service:
+          type: LoadBalancer
+        extraArgs:
+          - --insecure
+      configs:
+        params:
+          server.insecure: true
+
+- name: Wait for ArgoCD server deployment
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: argocd-server
+    namespace: "{{ argocd_namespace }}"
+    wait: true
+    wait_condition:
+      type: Available
+      status: "True"
+    wait_timeout: 180
+
+- name: Get ArgoCD initial admin password
+  ansible.builtin.command:
+    cmd: >
+      kubectl get secret argocd-initial-admin-secret
+      -n {{ argocd_namespace }}
+      -o jsonpath="{.data.password}"
+  register: argocd_password_b64
+  changed_when: false
+
+- name: Print ArgoCD admin password
+  ansible.builtin.debug:
+    msg: "ArgoCD admin password: {{ argocd_password_b64.stdout | b64decode }}"
